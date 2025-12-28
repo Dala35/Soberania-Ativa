@@ -194,50 +194,111 @@
 </footer>
 
 <!-- =========================
-     SCRIPT (KERNEL LOCAL)
+     SCRIPT (KERNEL REAL – SOBERANO)
      ========================= -->
 <script>
-  const clock = document.getElementById('clock');
-  const log = document.getElementById('log');
-  const cmd = document.getElementById('cmd');
-  const energy = document.getElementById('energy');
+  /*
+    CAMINHO ESCOLHIDO: REALIDADE
+    - Menos efeito, mais estrutura
+    - Kernel explícito
+    - Comandos como protocolos
+    - Estado observável
+  */
 
-  function tick() {
-    clock.textContent = new Date().toLocaleTimeString('pt-PT', { hour12:false });
-  }
-  setInterval(tick,1000); tick();
+  const UI = {
+    clock: document.getElementById('clock'),
+    logEl: document.getElementById('log'),
+    cmd: document.getElementById('cmd'),
+    energy: document.getElementById('energy'),
 
-  function logAdd(msg, color='white') {
-    const line = document.createElement('div');
-    line.className = `text-${color}`;
-    line.textContent = `[${new Date().toLocaleTimeString('pt-PT')}] ${msg}`;
-    log.appendChild(line);
-    log.scrollTop = log.scrollHeight;
-  }
+    log(msg, level = 'INFO') {
+      const line = document.createElement('div');
+      const time = new Date().toLocaleTimeString('pt-PT', { hour12: false });
+      const colors = {
+        INFO: 'text-white',
+        SYS: 'text-yellow-500',
+        OK: 'text-green-400',
+        WARN: 'text-red-400'
+      };
+      line.className = colors[level] || 'text-white';
+      line.textContent = `[${time}] [${level}] ${msg}`;
+      this.logEl.appendChild(line);
+      this.logEl.scrollTop = this.logEl.scrollHeight;
+    },
 
-  function energyGen(){
-    energy.innerHTML='';
-    for(let i=0;i<12;i++){
-      const b=document.createElement('div');
-      b.className='flex-1 bg-yellow-900/20 relative';
-      const h=Math.random()*80+20;
-      b.innerHTML=`<div class="absolute bottom-0 w-full bg-yellow-600" style="height:${h}%"></div>`;
-      energy.appendChild(b);
+    tick() {
+      this.clock.textContent = new Date().toLocaleTimeString('pt-PT', { hour12:false });
+    },
+
+    energyPulse() {
+      this.energy.innerHTML = '';
+      for (let i = 0; i < 12; i++) {
+        const b = document.createElement('div');
+        b.className = 'flex-1 bg-yellow-900/20 relative';
+        const h = Math.random() * 70 + 30;
+        b.innerHTML = `<div class="absolute bottom-0 w-full bg-yellow-600" style="height:${h}%"></div>`;
+        this.energy.appendChild(b);
+      }
     }
-  }
-  energyGen(); setInterval(energyGen,3000);
+  };
 
-  logAdd('NÚCLEO AFROKÓDICA INICIALIZADO','yellow');
-  logAdd('SOBERANIA CONFIRMADA','green');
+  const KERNEL = {
+    estado: {
+      soberania: true,
+      coerencia: 1.0,
+      energia: 0.88,
+      fase: 'ATIVA'
+    },
 
-  cmd.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){
-      const v=cmd.value.toUpperCase();
-      logAdd('CMD > '+v,'yellow');
-      if(v.includes('STATUS')) logAdd('KERNEL ESTÁVEL','green');
-      else if(v.includes('EVOLUIR')) logAdd('PROCESSO EVOLUTIVO ATIVO','green');
-      else logAdd('COMANDO ARQUIVADO LOCALMENTE','white');
-      cmd.value='';
+    protocolos: {
+      STATUS() {
+        UI.log(`FASE=${KERNEL.estado.fase} | COERÊNCIA=${KERNEL.estado.coerencia}`, 'OK');
+      },
+
+      EVOLUIR() {
+        KERNEL.estado.coerencia = Math.min(1, KERNEL.estado.coerencia + 0.05);
+        UI.log('PROCESSO EVOLUTIVO REAL APLICADO AO KERNEL', 'SYS');
+      },
+
+      SILENCIO() {
+        document.body.style.animation = 'none';
+        UI.log('INTERFACE REDUZIDA AO ESSENCIAL', 'SYS');
+      },
+
+      MEMORIA() {
+        UI.log('MEMÓRIA LOCAL ATIVA. NENHUMA API EXTERNA UTILIZADA.', 'OK');
+      }
+    },
+
+    executar(comando) {
+      if (this.protocolos[comando]) {
+        this.protocolos[comando]();
+      } else {
+        UI.log(`COMANDO "${comando}" NÃO DEFINIDO NO KERNEL`, 'WARN');
+      }
+    },
+
+    boot() {
+      UI.log('INICIALIZAÇÃO DO KERNEL SOBERANO...', 'SYS');
+      UI.log('MODO OFF-GRID CONFIRMADO', 'OK');
+      UI.log('AFROKÓDICA PRONTA PARA USO REAL', 'OK');
+    }
+  };
+
+  /* LOOP REAL */
+  setInterval(() => UI.tick(), 1000);
+  setInterval(() => UI.energyPulse(), 3000);
+
+  UI.energyPulse();
+  KERNEL.boot();
+
+  UI.cmd.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const cmd = UI.cmd.value.trim().toUpperCase();
+      if (!cmd) return;
+      UI.log(`CMD > ${cmd}`, 'SYS');
+      KERNEL.executar(cmd);
+      UI.cmd.value = '';
     }
   });
 </script>
