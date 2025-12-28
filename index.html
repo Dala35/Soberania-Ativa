@@ -68,11 +68,6 @@
 </footer>
 
 <script>
-/* ============================
-   KERNEL V6.0 – MULTI-IDENTIDADE REAL
-   MEMÓRIA ASSINADA & VERIFICÁVEL
-   ============================ */
-
 const UI = {
   clock: document.getElementById('clock'),
   logEl: document.getElementById('log'),
@@ -105,35 +100,29 @@ const Kernel = {
 
   createIdentity(name='IDENTIDADE_NOVA') {
     const id = crypto.randomUUID();
-    this.identities[id] = {
-      id, name, bootCount: 0, mode: 'observação', coerencia: 1.0, integrity: 'UNVERIFIED', timeline: []
-    };
+    this.identities[id] = { id, name, bootCount:0, mode:'observação', coerencia:1.0, integrity:'UNVERIFIED', timeline:[] };
     this.activeId = id;
     UI.log(`IDENTIDADE CRIADA: ${name} (ID: ${id})`);
     this.save();
   },
 
   switchIdentity(id) {
-    if(this.identities[id]){
+    if(this.identities[id]) {
       this.activeId = id;
       UI.log(`IDENTIDADE ATIVA: ${this.identities[id].name}`);
       this.save();
-    } else {
-      UI.log(`IDENTIDADE NÃO ENCONTRADA: ${id}`);
-    }
+    } else UI.log(`IDENTIDADE NÃO ENCONTRADA: ${id}`);
   },
 
   listIdentities() {
     UI.log('IDENTIDADES DISPONÍVEIS:');
     Object.values(this.identities).forEach(i => {
-      const activeMark = (i.id === this.activeId) ? '*' : ' ';
+      const activeMark = (i.id === this.activeId)?'*':' ';
       UI.log(`${activeMark} ${i.name} (ID: ${i.id})`);
     });
   },
 
-  get state() {
-    return this.activeId ? this.identities[this.activeId] : null;
-  },
+  get state() { return this.activeId ? this.identities[this.activeId] : null; },
 
   load() {
     const raw = localStorage.getItem(MEMORY_KEY);
@@ -147,6 +136,7 @@ const Kernel = {
   },
 
   async sign() {
+    if(!this.state) return;
     const data = JSON.stringify(this.state);
     const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
     const signature = Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -155,27 +145,31 @@ const Kernel = {
   },
 
   async verify() {
+    if(!this.state) return;
     const data = JSON.stringify(this.state);
     const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
     const current = Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
     const stored = localStorage.getItem(SIGN_KEY);
     this.state.integrity = stored && current===stored ? 'VERIFIED' : 'TAMPERED';
+    UI.renderState(this.state);
   },
 
   evolveIdentity() {
-    const b = this.state.bootCount;
-    if (b < 3) return 'observação';
-    if (b < 7) return 'aprendizagem';
-    if (b < 15) return 'interação';
+    const b = this.state?.bootCount||0;
+    if(b<3) return 'observação';
+    if(b<7) return 'aprendizagem';
+    if(b<15) return 'interação';
     return 'soberania';
   },
 
   record(event) {
-    this.state.timeline.push({ time: new Date().toISOString(), event });
+    if(!this.state) return;
+    this.state.timeline.push({ time:new Date().toISOString(), event });
   },
 
   async boot() {
     if(!this.activeId) this.createIdentity();
+    if(!this.state) return;
     this.state.bootCount++;
     this.state.mode = this.evolveIdentity();
     this.record(`BOOT #${this.state.bootCount} | MODO=${this.state.mode}`);
@@ -184,27 +178,29 @@ const Kernel = {
   },
 
   comandos: {
-    STATUS() { UI.log(`BOOT=${Kernel.state.bootCount} | MODO=${Kernel.state.mode} | INT=${Kernel.state.integrity}`); },
-    IDENTIDADE() { UI.log(`IDENTIDADE ATIVA: ${Kernel.state.name} (ID: ${Kernel.state.id})`); },
+    STATUS() { UI.log(`BOOT=${Kernel.state?.bootCount||0} | MODO=${Kernel.state?.mode||'N/A'} | INT=${Kernel.state?.integrity||'N/A'}`); },
+    IDENTIDADE() { UI.log(`IDENTIDADE ATIVA: ${Kernel.state?.name||'N/A'} (ID: ${Kernel.state?.id||'N/A'})`); },
     IDENTIDADES() { Kernel.listIdentities(); },
     TROCAR(args) { Kernel.switchIdentity(args); },
-    TIMELINE() { Kernel.state.timeline.forEach(e => UI.log(`${e.time} → ${e.event}`)); },
+    TIMELINE() { Kernel.state?.timeline.forEach(e=>UI.log(`${e.time} → ${e.event}`)); },
     EXPORTAR() {
-      const blob = new Blob([JSON.stringify(Kernel.state, null, 2)], { type:'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `afrokodica_${Kernel.state.name}.json`;
+      if(!Kernel.state) return;
+      const blob = new Blob([JSON.stringify(Kernel.state, null, 2)], {type:'application/json'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`afrokodica_${Kernel.state.name}.json`;
       a.click();
     },
-    VERIFICAR() { Kernel.verify().then(()=>UI.log(`INTEGRIDADE: ${Kernel.state.integrity}`)); },
+    VERIFICAR() { Kernel.verify().then(()=>UI.log(`INTEGRIDADE: ${Kernel.state?.integrity||'N/A'}`)); },
     RESETAR() { UI.log('RESET BLOQUEADO (SEGURANÇA)'); },
-    NOVA(args) { Kernel.createIdentity(args || 'IDENTIDADE_NOVA'); }
+    NOVA(args) { Kernel.createIdentity(args||'IDENTIDADE_NOVA'); }
   },
 
   exec(input) {
     const [cmd, ...rest] = input.split(' ');
     const args = rest.join(' ');
-    if(this.comandos[cmd]) this.comandos[cmd](args);
+    const command = this.comandos[cmd];
+    if(command) command(args);
     else UI.log(`COMANDO DESCONHECIDO: ${input}`);
   }
 };
@@ -213,9 +209,9 @@ setInterval(()=>UI.tick(),1000);
 Kernel.load();
 Kernel.boot();
 
-UI.cmd.addEventListener('keydown', e => {
+UI.cmd.addEventListener('keydown',e=>{
   if(e.key==='Enter'){
-    const c = UI.cmd.value.trim().toUpperCase();
+    const c=UI.cmd.value.trim().toUpperCase();
     if(!c) return;
     UI.log(`CMD > ${c}`);
     Kernel.exec(c);
