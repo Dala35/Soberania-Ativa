@@ -305,3 +305,83 @@
 
 </body>
 </html>
+
+/* ============================
+   MEMÓRIA REAL – CAMADA KERNEL
+   Persistência Local Soberana
+   ============================ */
+
+const MEMORY_KEY = 'AFROKODICA_KERNEL_MEMORY_V1';
+
+function loadMemory() {
+  try {
+    const raw = localStorage.getItem(MEMORY_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.warn('Falha ao carregar memória:', e);
+    return null;
+  }
+}
+
+function saveMemory(state) {
+  try {
+    localStorage.setItem(MEMORY_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn('Falha ao salvar memória:', e);
+  }
+}
+
+// Estado inicial soberano
+const DEFAULT_STATE = {
+  bootCount: 0,
+  lastBoot: null,
+  sessionLog: [],
+  identity: 'AFROKÓDICA',
+  mode: 'observação'
+};
+
+// Kernel com memória real
+const KERNEL = {
+  state: { ...DEFAULT_STATE },
+
+  boot() {
+    const persisted = loadMemory();
+    if (persisted) {
+      this.state = persisted;
+    }
+
+    this.state.bootCount += 1;
+    this.state.lastBoot = new Date().toISOString();
+    this.log('BOOT', 'Sistema iniciado');
+    this.commit();
+  },
+
+  log(type, message) {
+    this.state.sessionLog.push({
+      type,
+      message,
+      timestamp: new Date().toISOString()
+    });
+  },
+
+  setMode(mode) {
+    this.state.mode = mode;
+    this.log('MODE', `Modo alterado para ${mode}`);
+    this.commit();
+  },
+
+  commit() {
+    saveMemory(this.state);
+  }
+};
+
+// BOOT REAL
+KERNEL.boot();
+// Efeito de entrada
+        window.onload = () => {
+            setTimeout(() => addLog('VERIFICANDO INTEGRIDADE DOS DADOS...', 'yellow'), 500);
+            setTimeout(() => addLog('MEMÓRIA EXPANDIDA SINCRONIZADA.', 'green'), 1000);
+        };
+    </script>
+</body>
+</html>
