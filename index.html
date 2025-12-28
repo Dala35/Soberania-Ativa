@@ -375,13 +375,42 @@ const KERNEL = {
   }
 };
 
-// BOOT REAL
+// ============================
+// IDENTIDADE MUTÁVEL
+// ============================
+
+KERNEL.identityRules = function () {
+  const boots = this.state.bootCount;
+
+  if (boots < 3) return 'observação';
+  if (boots < 7) return 'aprendizagem';
+  if (boots < 15) return 'interação';
+  return 'soberania';
+};
+
+KERNEL.updateIdentity = function () {
+  const newMode = this.identityRules();
+  if (newMode !== this.state.mode) {
+    this.state.mode = newMode;
+    this.log('IDENTITY', `Identidade evoluiu para ${newMode}`);
+  }
+};
+
+// BOOT REAL COM IDENTIDADE
+KERNEL.boot = function () {
+  const persisted = loadMemory();
+  if (persisted) {
+    this.state = persisted;
+  }
+
+  this.state.bootCount += 1;
+  this.state.lastBoot = new Date().toISOString();
+
+  this.updateIdentity();
+
+  this.log('BOOT', `Sistema iniciado em modo ${this.state.mode}`);
+  this.commit();
+};
+
 KERNEL.boot();
-// Efeito de entrada
-        window.onload = () => {
-            setTimeout(() => addLog('VERIFICANDO INTEGRIDADE DOS DADOS...', 'yellow'), 500);
-            setTimeout(() => addLog('MEMÓRIA EXPANDIDA SINCRONIZADA.', 'green'), 1000);
-        };
-    </script>
-</body>
-</html>
+
